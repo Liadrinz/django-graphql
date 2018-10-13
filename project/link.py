@@ -1,5 +1,6 @@
 import os
 import re
+from project.settings import GQL_PAHT_NAME as gqlpn
 
 def strip_end(iterable):
     temp = iterable
@@ -29,6 +30,8 @@ def link(filename, keywords, content, offset, emsg):
         if keywords in lines[i]:
             index = i
             has = True
+            if keywords == 'import Query':
+                lines[i] = 'from data.%s.query import Query'%gqlpn
             break
     if not has:
         print(emsg)
@@ -70,22 +73,22 @@ if __name__ == '__main__':
     if 'from project.schema import schema' not in project_url:
         project_url.insert(urlpatternsIndex, 'from project.schema import schema')
     urlpatternsIndex = reset_project_pos(project_url)
-    if """    path('graphql/', GraphQLView.as_view(graphiql=True, schema=schema)),""" not in project_url:
-        project_url.insert(urlpatternsIndex + 1, """    path('graphql/', GraphQLView.as_view(graphiql=True, schema=schema)),""")
+    if """    path('%s/', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlpn not in project_url:
+        project_url.insert(urlpatternsIndex + 1, """    path('%s/', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlpn)
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
 
     mutations = []
-    for item in os.walk('./data/graphql/mutations/'):
+    for item in os.walk('./data/%s/mutations/'%gqlpn):
         mutations = item[2]
 
     flush('./data/schema.py', 'import Query', None, mutations)
     flush('./project/schema.py', 'class Mutations', 'schema = graphene.Schema(query=Query, mutation=Mutations)', mutations)
-
+    link('./data/schema.py', 'import Query', '', 1, 'No valid Query found!')
     for mutation in mutations:
 
         class_name = ''
-        with open('./data/graphql/mutations/' + mutation, 'r') as f:
+        with open('./data/%s/mutations/'%gqlpn + mutation, 'r') as f:
             for line in f.readlines():
                 for name in re.findall(r'class .*?\s*\(', line):
                     name = name.replace(' ', '')
@@ -108,7 +111,7 @@ if __name__ == '__main__':
                 part = part[0].upper() + part[1:]
                 camel += part
 
-        data_schema_import = 'from data.graphql.mutations.%s import %s'%(origin_mutation, class_name)
+        data_schema_import = 'from data.%s.mutations.%s import %s'%(gqlpn, origin_mutation, class_name)
         project_schema_register = '%s = data.schema.%s.Field()'%(mutation, class_name)
 
         link('./data/schema.py', 'import Query', data_schema_import, 1, 'No valid Query found!')

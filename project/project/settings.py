@@ -124,7 +124,6 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'data', 'static')
 STATIC_URL = '/static/'
 
-
 # User profile
 AUTH_USER_MODEL = 'data.User'
 
@@ -159,3 +158,6 @@ CORS_ALLOW_HEADERS = (
 CORS_EXPOSE_HEADERS = (
     'token',
 )
+
+# GraphQL path name
+GQL_PAHT_NAME = 'graphql'
