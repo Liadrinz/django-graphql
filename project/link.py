@@ -75,7 +75,7 @@ if __name__ == '__main__':
         project_url.insert(urlpatternsIndex, 'from project.schema import schema')
     urlpatternsIndex = reset_project_pos(project_url)
     if """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
-        project_url.insert(urlpatternsIndex + 1, """    path('%s/', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlpn)
+        project_url.insert(urlpatternsIndex + 1, """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl)
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
 
