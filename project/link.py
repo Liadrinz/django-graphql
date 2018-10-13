@@ -27,13 +27,19 @@ def link(filename, keywords, content, offset, emsg):
     lines = getlines(filename)
     index = 0
     has = False
-    for i in range(0, len(lines)):
-        if keywords in lines[i]:
-            index = i
-            has = True
-            if keywords == 'import Query':
+    if keywords == '#':
+        for i in range(0, len(lines)):
+            if not re.match(r'\s*#\s*.*', lines[i]):
                 lines[i] = 'from data.%s.query import Query'%gqlpn
-            break
+                index = i
+                has = True
+                break
+    else:
+        for i in range(0, len(lines)):
+            if keywords in lines[i]:
+                index = i
+                has = True
+                break
     if not has:
         print(emsg)
         return False
@@ -74,8 +80,8 @@ if __name__ == '__main__':
     if 'from project.schema import schema' not in project_url:
         project_url.insert(urlpatternsIndex, 'from project.schema import schema')
     urlpatternsIndex = reset_project_pos(project_url)
-    if """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
-        project_url.insert(urlpatternsIndex + 1, """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl)
+    if """    path('%s', BetterGraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
+        project_url.insert(urlpatternsIndex + 1, """    path('%s', BetterGraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl)
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
 
@@ -84,13 +90,13 @@ if __name__ == '__main__':
     for item in os.walk('./data/%s/mutations/'%gqlpn):
         blocks.append(item)
     for item in blocks:
-        if item[0] == './data/%s/mutations/'%gqlpn:
+        if item[0] ==  './data/%s/mutations/'%gqlpn:
             mutations = item[2]
             break
 
     flush('./data/schema.py', 'import Query', None, mutations)
     flush('./project/schema.py', 'class Mutations', 'schema = graphene.Schema(query=Query, mutation=Mutations)', mutations)
-    link('./data/schema.py', 'import Query', '', 1, 'No valid Query found!')
+    link('./data/schema.py', '#', '', 1, 'No valid Query found!')
     for mutation in mutations:
 
         class_name = ''
@@ -120,5 +126,5 @@ if __name__ == '__main__':
         data_schema_import = 'from data.%s.mutations.%s import %s'%(gqlpn, origin_mutation, class_name)
         project_schema_register = '%s = data.schema.%s.Field()'%(mutation, class_name)
 
-        link('./data/schema.py', 'import Query', data_schema_import, 1, 'No valid Query found!')
+        link('./data/schema.py', '#', data_schema_import, 1, 'No valid Query found!')
         link('./project/schema.py', 'class Mutations', '    ' + project_schema_register, 1, 'No class Mutations found or legally named')
