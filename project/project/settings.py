@@ -159,5 +159,6 @@ CORS_EXPOSE_HEADERS = (
     'token',
 )
 
-# GraphQL path name
+# GraphQL config
 GQL_PAHT_NAME = 'graphql'
+GQL_URL = 'graphql/'

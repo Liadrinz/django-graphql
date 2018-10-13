@@ -1,6 +1,7 @@
 import os
 import re
 from project.settings import GQL_PAHT_NAME as gqlpn
+from project.settings import GQL_URL as gqlurl
 
 def strip_end(iterable):
     temp = iterable
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     if 'from project.schema import schema' not in project_url:
         project_url.insert(urlpatternsIndex, 'from project.schema import schema')
     urlpatternsIndex = reset_project_pos(project_url)
-    if """    path('%s/', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlpn not in project_url:
+    if """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
         project_url.insert(urlpatternsIndex + 1, """    path('%s/', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlpn)
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
