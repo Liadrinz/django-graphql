@@ -79,9 +79,14 @@ if __name__ == '__main__':
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
 
+    blocks = []
     mutations = []
     for item in os.walk('./data/%s/mutations/'%gqlpn):
-        mutations = item[2]
+        blocks.append(item)
+    for item in blocks:
+        if item[0] == './data/%s/mutations/'%gqlpn:
+            mutations = item[2]
+            break
 
     flush('./data/schema.py', 'import Query', None, mutations)
     flush('./project/schema.py', 'class Mutations', 'schema = graphene.Schema(query=Query, mutation=Mutations)', mutations)
