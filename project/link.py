@@ -48,7 +48,7 @@ def link(filename, keywords, content, offset):
             remained = re.findall(r'\(.*', lines[index])[0]
             remained = remained[1:]
             non_space_index = 0
-            for i in range(1, len(remained)):
+            for i in range(0, len(remained)):
                 if remained[i] != ' ':
                     non_space_index = i
                     break
