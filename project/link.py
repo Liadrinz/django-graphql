@@ -5,9 +5,12 @@ from project.settings import GQL_URL as gqlurl
 
 def strip_end(iterable):
     temp = iterable
-    while temp[-1].replace(' ', '') == '':
-        temp.pop()
-    return temp
+    try:
+        while temp[-1].replace(' ', '') == '':
+            temp.pop()
+        return temp
+    except:
+        return []
 
 def getlines(filename):
     return ''.join(open(filename, 'r').readlines()).split('\n')
@@ -19,30 +22,40 @@ def setlines(filename, iterable):
             f.write(line + '\n')
 
 def reset_project_pos(iterable):
-    for i in range(0, len(project_url)):
-        if 'urlpatterns=[' in project_url[i].replace(' ', ''):
+    for i in range(0, len(iterable)):
+        if 'urlpatterns=[' in iterable[i].replace(' ', ''):
             return i
 
-def link(filename, keywords, content, offset, emsg):
+def link(filename, keywords, content, offset):
     lines = getlines(filename)
     index = 0
     has = False
     if keywords == '#':
         for i in range(0, len(lines)):
             if not re.match(r'\s*#\s*.*', lines[i]):
-                lines[i] = 'from data.%s.query import Query'%gqlpn
                 index = i
                 has = True
                 break
     else:
         for i in range(0, len(lines)):
-            if keywords in lines[i]:
+            if keywords.replace(' ', '') in lines[i].replace(' ', ''):
                 index = i
                 has = True
                 break
-    if not has:
-        print(emsg)
-        return False
+    
+    if keywords == 'class Query(':
+        if lines[index].replace(' ', '') != 'classQuery(':
+            remained = re.findall(r'\(.*', lines[index])[0]
+            remained = remained[1:]
+            non_space_index = 0
+            for i in range(1, len(remained)):
+                if remained[i] != ' ':
+                    non_space_index = i
+                    break
+            remained = '    ' + remained[non_space_index:]
+            lines[index] = 'class Query('
+            lines.insert(index + 1, remained)
+
     if content not in lines:
         lines.insert(index + offset, content)
     lines = strip_end(lines)
@@ -80,10 +93,19 @@ if __name__ == '__main__':
     if 'from project.schema import schema' not in project_url:
         project_url.insert(urlpatternsIndex, 'from project.schema import schema')
     urlpatternsIndex = reset_project_pos(project_url)
-    if """    path('%s', BetterGraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
-        project_url.insert(urlpatternsIndex + 1, """    path('%s', BetterGraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl)
+    if """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl not in project_url:
+        project_url.insert(urlpatternsIndex + 1, """    path('%s', GraphQLView.as_view(graphiql=True, schema=schema)),"""%gqlurl)
     project_url = strip_end(project_url)
     setlines('./project/urls.py', project_url)
+
+    blocks = []
+    queries = []
+    for item in os.walk('./data/%s/queries/'%gqlpn):
+        blocks.append(item)
+    for item in blocks:
+        if item[0] ==  './data/%s/queries/'%gqlpn:
+            queries = item[2]
+            break
 
     blocks = []
     mutations = []
@@ -96,35 +118,36 @@ if __name__ == '__main__':
 
     flush('./data/schema.py', 'import Query', None, mutations)
     flush('./project/schema.py', 'class Mutations', 'schema = graphene.Schema(query=Query, mutation=Mutations)', mutations)
-    link('./data/schema.py', '#', '', 1, 'No valid Query found!')
-    for mutation in mutations:
+    link('./data/schema.py', '#', '', 1)
 
+    for mutation in queries + mutations:
+        
         class_name = ''
-        with open('./data/%s/mutations/'%gqlpn + mutation, 'r') as f:
-            for line in f.readlines():
-                for name in re.findall(r'class .*?\s*\(', line):
-                    name = name.replace(' ', '')
-                    class_name = name[5:-1]
+        if mutation in queries:
+            f = open('./data/%s/queries/'%gqlpn + mutation, 'r')
+        elif mutation in mutations:
+            f = open('./data/%s/mutations/'%gqlpn + mutation, 'r')
+        for line in f.readlines():
+            for name in re.findall(r'class .*?\s*\(', line):
+                name = name.replace(' ', '')
+                class_name = name[5:-1]
 
         if class_name == '':
-            print('No valid mutation class in some mutation file!')
+            print('Invalid Class')
             exit()
 
+        ancestor_mutation = mutation
         mutation = mutation.replace('.py', '')
         origin_mutation = mutation
-        camel = ''
-        if re.match(r'(.*[a-z][A-Z].*)+', mutation):
-            camel = mutation[0].upper() + mutation[1:]
-            for peak in re.findall(r'[a-z][A-Z]', mutation):
-                mutation = mutation.replace(peak, peak[0] + '_' + peak[1].lower())
-            mutation = mutation[0].lower() + mutation[1:]
-        else:
-            for part in mutation.split('_'):
-                part = part[0].upper() + part[1:]
-                camel += part
-
-        data_schema_import = 'from data.%s.mutations.%s import %s'%(gqlpn, origin_mutation, class_name)
-        project_schema_register = '%s = data.schema.%s.Field()'%(mutation, class_name)
-
-        link('./data/schema.py', '#', data_schema_import, 1, 'No valid Query found!')
-        link('./project/schema.py', 'class Mutations', '    ' + project_schema_register, 1, 'No class Mutations found or legally named')
+        mutation = mutation[0].lower() + mutation[1:]
+        
+        if ancestor_mutation in queries:
+            data_schema_import = 'from data.%s.queries.%s import %s'%(gqlpn, origin_mutation, class_name)
+            project_schema_register = 'data.schema.%s'%class_name
+            link('./data/schema.py', '#', data_schema_import, 1)
+            link('./project/schema.py', 'class Query(', '    ' + project_schema_register + ', ', 1)
+        elif ancestor_mutation in mutations:
+            data_schema_import = 'from data.%s.mutations.%s import %s'%(gqlpn, origin_mutation, class_name)
+            project_schema_register = '%s = data.schema.%s.Field()'%(mutation, class_name)
+            link('./data/schema.py', '#', data_schema_import, 1)
+            link('./project/schema.py', 'class Mutations', '    ' + project_schema_register, 1)

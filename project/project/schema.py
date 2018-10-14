@@ -1,7 +1,7 @@
 import graphene
 import data.schema
 
-class Query(data.schema.Query, graphene.ObjectType):
+class Query(graphene.ObjectType):
     pass
 
 class Mutations(graphene.ObjectType):
