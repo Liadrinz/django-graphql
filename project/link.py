@@ -125,7 +125,7 @@ if __name__ == '__main__':
         class_name = ''
         if mutation in queries:
             f = open('./data/%s/queries/'%gqlpn + mutation, 'r')
-        elif mutation in mutations:
+        if mutation in mutations:
             f = open('./data/%s/mutations/'%gqlpn + mutation, 'r')
         for line in f.readlines():
             for name in re.findall(r'class .*?\s*\(', line):
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             project_schema_register = 'data.schema.%s'%class_name
             link('./data/schema.py', '#', data_schema_import, 1)
             link('./project/schema.py', 'class Query(', '    ' + project_schema_register + ', ', 1)
-        elif ancestor_mutation in mutations:
+        if ancestor_mutation in mutations:
             data_schema_import = 'from data.%s.mutations.%s import %s'%(gqlpn, origin_mutation, class_name)
             project_schema_register = '%s = data.schema.%s.Field()'%(mutation, class_name)
             link('./data/schema.py', '#', data_schema_import, 1)
