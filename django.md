@@ -1,16 +1,16 @@
-# Django 入门
+# Django 快速入门文档 for 胖胖组
 
-##### 1. Windows下环境搭建
-- 安装 python 3.6.5
+#### 1. Windows下环境搭建
+- 安装 python 3.6.5 <br>
 https://www.python.org/downloads/release/python-365/
-- 安装 pip
-
+- 安装 pip <br>
+https://blog.csdn.net/zytbft/article/details/72566197?utm_source=blogxgwz5
 - 使用 pip 安装 django
-```shell
+```cmd
 pip install django
 ```
 
-##### 2. Ubuntu下环境搭建
+#### 2. Ubuntu下环境搭建
 - 安装 python3 (系统默认是python2)
 ```shell
 sudo apt-get install python3
@@ -23,3 +23,76 @@ sudo apt-get install pip3
 ```shell
 pip3 install django
 ```
+
+#### 3. 了解 Django
+官方文档：https://docs.djangoproject.com/zh-hans/2.1/ <br>
+Django 框架可以简单地分为以下下几层
+- 模型层 —— 构建和操纵数据库<br>
+在模型层中可以创建一个个的类，他们都是django.db.models.Model的派生类，一个类就相当于一张数据库表
+- 视图层 —— 接收请求，返回响应<br>
+在视图层中可以创建一个个的类或是函数，用来接收请求并返回响应
+- 模板层<br>
+django模板是特殊的html文件，视图层中的响应数据可以被传到模板层，呈现到html页面上 <br>
+使用django做前后端分离的开发时，一般不需要用到模板层。可以理解为：独立的前端取代了模板层，成为视图层中响应数据的接收端。
+
+#### 4. Django ORM
+ORM (Object-Relation Mapping) 对象-关系映射 <br>
+ORM封装了SQL语句，所以我们在操作数据库中的数据时，只需用操作对象的方式即可。<br>
+例如，先在models.py(模型层)中建立一个老师模型
+```python
+from django.db import models
+
+
+# 建立一个老师模型
+class Teacher(models.Model):
+  name = models.CharField(max_length=100)
+  school = models.CharField(max_length=100)
+```
+然后将模型迁移到数据库(这个过程可以理解为建立映射关系)
+```shell
+# linux shell
+python3 manage.py makemigrations
+python3 manage.py migrate
+
+# windows cmd
+python manage.py makemigrations
+python manage.py migrate
+```
+此后，数据库中就建立了一张老师的表，具有name和school字段，还有一个自增的id字段。然后使用面向对象的语句可以对该表进行增删查改：
+```python
+# 该文件与models.py在同一文件夹下
+from dir_name.models import Teacher  # 导入Teacher类
+
+Teacher.objects.create(name="赵方", school="软件学院")  # 在Teacher类对应的表中创建(插入)一条数据
+Teacher.objects.get(pk=1) # 返回Teacher类对应的表中id为1的数据
+Teacher.objects.all() # 返回该表中的所有数据
+Teacher.objects.get(pk=1).name = "王安生"  # 修改id为1的老师的姓名
+Teacher.objects.get(pk=1).delete()  # 从表中删除id为1的老师
+
+```
+更多操作见3中的django官方文档，或学习5中的实践教程
+
+#### 5. 用django创建一个博客网站
+教程视频：https://www.imooc.com/learn/790 <br>
+非重点关注：模板、表单、admin (其他都重点关注一下) <br>
+PS:不必做出完整的博客，只需掌握对django的原理有一定的理解
+
+#### 6. 前后端分离开发
+开发一个博客后端，提供博客的增删查改四个接口给前端使用。<br>
+需要在视图层做的工作：接收前端请求 -> 获取请求中的数据 -> 使用数据执行业务逻辑 -> 返回给前端一个响应 <br>
+(前端工作：向后端发送请求 -> 接收后端响应 -> 获取响应中的数据 -> 使用数据执行业务逻辑) <br>
+例如这是一个前端使用POST方法发送请求来创建博客的(伪)代码
+```python
+# views.py
+# 规定前端传数据的格式为 {"blog": {"title": "博客标题", "content": "博客内容"}}
+
+import json
+from django.http import HttpResponse
+from dir_name.models import Blog  # 导入模型
+
+def create_blog(request):
+  post_data = request.POST['blog']  # 获取数据中的blog字段
+  title = post_data['title']  # 获取标题
+  content = post_data['content'] # 获取内容
+  Blog.objects.create(title=title, content=content) # 在数据库中创建(插入)博客
+  return HttpResponse(json.dumps({"msg": "ok"}))  # 返回一个json格式的响应
