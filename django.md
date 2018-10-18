@@ -17,7 +17,7 @@ sudo apt-get install python3
 ```
 - 安装 pip3 (pip对应python2, pip3对应python3)
 ```shell
-sudo apt-get install pip3
+sudo apt-get install python3-pip
 ```
 - 使用 pip3 安装 django
 ```shell
