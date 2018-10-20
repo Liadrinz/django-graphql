@@ -1,4 +1,4 @@
-# 前端(React)快速入门
+# 前端(React)快速入门建议
 
 #### 1. 学习基础的 HTML, CSS, JavaScript
 
